@@ -6,7 +6,7 @@
 #   bash tools/make-sound.sh                 -> assets/audio/bed.wav
 #   bash tools/make-sound.sh out.wav
 #
-# TEMPLATE from the SV Motion OrderDi example. The hit times below are that reel's
+# TEMPLATE from the SV Motion 18 s reference reel. The hit times below are that reel's
 # beats (hook 0 to 3.0, logo 3.25, phone 4.9, callouts 6.2 / 8.4 / 10.8, tagline
 # slams 12.8 to 13.7, close sting 15.6). Move them to your own beat list, and change
 # DUR and the final afade start if your video is not 18 seconds long.

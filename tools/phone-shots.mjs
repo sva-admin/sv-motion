@@ -2,13 +2,20 @@
 // Needs only Node 22+ and the Chrome that HyperFrames already downloaded.
 //
 //   node tools/phone-shots.mjs <url> <outDir> <name>=<scrollY or #selector> ...
-//   node tools/phone-shots.mjs https://order-di-home.apps.sv-academy.org/ assets/phone hero=0 flow=#flow
+//   node tools/phone-shots.mjs https://sv-academy.org/ assets/phone hero=0 flow=#flow
 //   name=<pixels>   scroll that far down, then shoot the phone screen
 //   name=#id        scroll to that section, then shoot
 //   name=@selector  shoot one element (a logo) on a transparent background, 8x (sharp for text or SVG; a raster logo only gets upscaled, check its natural size)
 //
 // Each shot is 390x844 CSS px (an iPhone-sized viewport) at 3x = 1170x2532 JPEG.
 // Element shots (@selector) are transparent PNG.
+//
+// Optional settings, set before the command:
+//   SETTLE_MS=2600          wait longer after each scroll (cards caught mid-animation)
+//   HIDE=".cookie,.chat"    hide fixed overlays (cookie banner, chat button) with CSS.
+//                           It never clicks Accept and never stores consent.
+//   PRESCROLL=1             walk the whole page once before shooting, so every
+//                           scroll reveal has fired (blank cards at a tile seam)
 // How it works: starts Chrome headless with a DevTools port, then talks to it
 // over the built-in WebSocket (Node 22): emulate a phone, load, scroll, screenshot.
 import { spawn, execSync } from "node:child_process";
@@ -79,9 +86,25 @@ try {
   await loaded;
   await send("Runtime.evaluate", { expression: "document.fonts.ready.then(() => true)", awaitPromise: true });
   await sleep(SETTLE_MS + 1000); // let the hero entrance animations finish
+  if (process.env.HIDE) {
+    // Hide overlays with CSS only: nothing is clicked, no consent is given or stored.
+    await send("Runtime.evaluate", { expression: `(() => { const st = document.createElement("style"); st.id = "__hide"; st.textContent = ${JSON.stringify(process.env.HIDE)} + "{display:none!important}"; document.head.appendChild(st); })()` });
+  }
+  if (process.env.PRESCROLL) {
+    // Walk the whole page once so every scroll reveal fires, then go back to the top.
+    const total = (await send("Runtime.evaluate", { expression: "document.documentElement.scrollHeight", returnByValue: true })).result.value;
+    for (let y = 0; y <= total; y += 200) {
+      await send("Runtime.evaluate", { expression: `window.scrollTo(0, ${y})` });
+      await sleep(60);
+    }
+    await send("Runtime.evaluate", { expression: "window.scrollTo(0, 0)" });
+    await sleep(SETTLE_MS);
+  }
   mkdirSync(outDir, { recursive: true });
   for (const spec of specs) {
-    const [name, where = "0"] = spec.split("=");
+    const eq = spec.indexOf("="); // split at the first = only: a selector may hold one (img[alt="Logo"])
+    const name = eq < 0 ? spec : spec.slice(0, eq);
+    const where = eq < 0 ? "0" : spec.slice(eq + 1);
     if (where.startsWith("@")) {
       // name=@selector : one element (a logo or wordmark) on a transparent background, 8x (sharp for text or SVG; a raster logo only gets upscaled).
       const sel = where.slice(1);
