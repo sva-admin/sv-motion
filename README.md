@@ -79,3 +79,4 @@ MIT, for the SV Academy text and scripts in this repository, written in our own 
 
 - All of our published skills: [github.com/sva-admin/claude-skills](https://github.com/sva-admin/claude-skills)
 - Courses and free lessons: [sv-academy.org](https://sv-academy.org)
+- Software and AI built for your business: [svinnovation.com](https://svinnovation.com), Silicon Valley Innovation, the company behind SV Academy
